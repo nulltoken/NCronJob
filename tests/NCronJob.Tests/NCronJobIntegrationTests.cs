@@ -98,7 +98,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task InstantJobShouldGetParameter()
     {
-        ServiceCollection.AddNCronJob((n, sp) => n.AddJob<ParameterJob>());
+        ServiceCollection.AddNCronJob(n => n.AddJob<ParameterJob>());
         var provider = CreateServiceProvider();
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("Hello World");
 
