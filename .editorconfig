@@ -450,6 +450,16 @@ dotnet_diagnostic.S2326.severity = none # S2326: Unused type parameters should b
 ##########################################
 # Custom Test Code Analyzers Rules
 ##########################################
+
+# CS1591: Missing XML comment for publicly visible type or member
+dotnet_diagnostic.CS1591.severity = none
+
+# S125: Sections of code should not be commented out
+dotnet_diagnostic.S125.severity = none
+
+# IDE1006: Naming Styles
+dotnet_diagnostic.IDE1006.severity = none
+
 [tests/**.cs]
 
 # Visual Studio
