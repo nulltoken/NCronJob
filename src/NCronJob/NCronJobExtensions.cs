@@ -32,9 +32,9 @@ public static class NCronJobExtensions
         var builder = new NCronJobOptionBuilder(services, settings);
         options?.Invoke(builder);
 
-        builder.RegisterJobs(); // Complete building the NCronJobOptionBuilder
-
         RegisterCommonServices(services, settings);
+
+        builder.RegisterJobs(); // Complete building the NCronJobOptionBuilder
 
         services.TryAddSingleton<MySettings>();
 
