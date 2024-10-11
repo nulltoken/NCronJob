@@ -22,6 +22,7 @@ internal sealed partial class QueueWorker : BackgroundService
         JobWorker jobWorker,
         JobRegistry registry,
         StartupJobManager startupJobManager,
+        MySettings settings,
         ILogger<QueueWorker> logger,
         IHostApplicationLifetime lifetime)
     {
@@ -34,6 +35,8 @@ internal sealed partial class QueueWorker : BackgroundService
         lifetime.ApplicationStopping.Register(() => shutdown?.Cancel());
 
         this.jobQueueManager.CollectionChanged += HandleUpdate;
+
+        settings.IOnlyExistsToSilenceWarnings();
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)

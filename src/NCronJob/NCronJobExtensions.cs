@@ -34,29 +34,12 @@ public static class NCronJobExtensions
 
         builder.RegisterJobs(); // Complete building the NCronJobOptionBuilder
 
-        services.TryAddSingleton(settings);
-        services.AddHostedService<QueueWorker>();
-        services.TryAddSingleton<JobRegistry>();
-        services.TryAddSingleton<DynamicJobFactoryRegistry>();
-        services.TryAddSingleton<IJobHistory, NoOpJobHistory>();
-        services.TryAddSingleton<JobQueueManager>();
-        services.TryAddSingleton<JobWorker>();
-        services.TryAddSingleton<JobProcessor>();
-        services.TryAddSingleton<JobExecutor>();
-        services.TryAddSingleton<IRetryHandler, RetryHandler>();
-        services.TryAddSingleton<IInstantJobRegistry, InstantJobRegistry>();
-        services.TryAddSingleton<IRuntimeJobRegistry, RuntimeJobRegistry>();
-        services.TryAddSingleton(TimeProvider.System);
-        services.TryAddSingleton<StartupJobManager>();
+        RegisterCommonServices(services, settings);
+
+        services.TryAddSingleton<MySettings>();
 
         return services;
     }
-
-    // public static IServiceCollection AddNCronJob(
-    //     this IServiceCollection services)
-    //     {
-    //         return AddNCronJob(services, (builder) => {});
-    //     }
 
     public static IServiceCollection AddNCronJob(
         this IServiceCollection services,
@@ -66,16 +49,24 @@ public static class NCronJobExtensions
         var settings = new ConcurrencySettings { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 };
         var builder = new NCronJobOptionBuilder(services, settings);
 
+        RegisterCommonServices(services, settings);
 
-                            // if (false) {
-                            //         services.AddOptions<MySettings>().Configure(configure);
-                            //         services.AddSingleton<IConfigureOptions<MySettings>, ConfigureMySettingsOptions>();
-                            //         services.AddSingleton(resolver =>
-                            //             resolver.GetRequiredService<IOptions<MySettings>>().Value);
-                            // }
+        services.TryAddSingleton((sp) =>
+        {
+            options(builder, sp);
+            builder.RegisterJobs(); // Complete building the NCronJobOptionBuilder
 
+            return new MySettings();
+        });
+
+        return services;
+    }
+
+    private static void RegisterCommonServices(
+        IServiceCollection services,
+        ConcurrencySettings settings)
+    {
         services.TryAddSingleton(settings);
-        services.AddHostedService<ApplicationInsightsValidationService>();
         services.AddHostedService<QueueWorker>();
         services.TryAddSingleton<JobRegistry>();
         services.TryAddSingleton<DynamicJobFactoryRegistry>();
@@ -89,66 +80,15 @@ public static class NCronJobExtensions
         services.TryAddSingleton<IRuntimeJobRegistry, RuntimeJobRegistry>();
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<StartupJobManager>();
-
-        if (options is not null)
-        {
-            services.TryAddSingleton((sp) =>
-            {
-                options(builder, sp);
-                builder.RegisterJobs(); // Complete building the NCronJobOptionBuilder
-
-                return new MySettings();
-            });
-        }
-
-
-        return services;
     }
 
-    // public static IApplicationBuilder UseNCronJob(
-    //     this IApplicationBuilder services
-    //     )
-    // {
-    //     var x = services.ApplicationServices.GetRequiredService<MySettings>();
-    //     return services;
-    // }
 }
 
-        public class ApplicationInsightsValidationService : IHostedService
-        {
-#pragma warning disable S4487 // Unread "private" fields should be removed
-    private readonly MySettings _options;
-#pragma warning restore S4487 // Unread "private" fields should be removed
-
-    public ApplicationInsightsValidationService(MySettings options)
-            {
-                _options = options;
-            }
-
-            public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-
-            public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-        }
-public class MySettings
+internal class MySettings
 {
-    public Action<NCronJobOptionBuilder, IServiceProvider> Configure { get; set; } = (builder, sp) => { };
-}
-
-public class ConfigureMySettingsOptions : IConfigureOptions<MySettings>
-{
-    private readonly IServiceProvider sp;
-    private readonly NCronJobOptionBuilder builder;
-
-    public ConfigureMySettingsOptions(NCronJobOptionBuilder builder, IServiceProvider sp)
-    {
-        this.sp = sp;
-        this.builder = builder;
-    }
-
-    public void Configure(MySettings options)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-
-        options.Configure(builder, sp);
-    }
+#pragma warning disable CA1822 // Mark members as static
+#pragma warning disable S1186 // Methods should not be empty
+    internal void IOnlyExistsToSilenceWarnings() { }
+#pragma warning restore S1186 // Methods should not be empty
+#pragma warning restore CA1822 // Mark members as static
 }

@@ -102,12 +102,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         var provider = CreateServiceProvider();
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("Hello World");
 
-        var ss = provider.GetRequiredService<IEnumerable<IHostedService>>();
-
-        foreach (var s in ss)
-        {
-            await s.StartAsync(CancellationToken);
-        }
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         var content = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         content.ShouldBe("Hello World");
@@ -244,12 +239,7 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
             .And.WithCronExpression("* * * * *").WithName("Job 4")));
         var provider = CreateServiceProvider();
 
-        var ss = provider.GetRequiredService<IEnumerable<IHostedService>>();
-
-        foreach (var s in ss)
-        {
-            await s.StartAsync(CancellationToken);
-        }
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         // Wait 2 instances at the same time
@@ -392,6 +382,31 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
         var jobFinished = await WaitForJobsOrTimeout(2, TimeSpan.FromMilliseconds(250));
         jobFinished.ShouldBeTrue();
     }
+
+    [Fact]
+    public async Task CanLeverageIServiceProviderWhileRegisteringNCronJob()
+    {
+        TestValueProvider tvp = new(Guid.NewGuid().ToString("N"));
+
+        ServiceCollection.AddSingleton(tvp);
+
+        ServiceCollection.AddNCronJob((n, sp) =>
+        {
+            TestValueProvider resolved = sp.GetRequiredService<TestValueProvider>();
+            n.AddJob<ParameterJob>(p => p.WithCronExpression("* * * * *").WithParameter(resolved.Value));
+        });
+
+        var provider = CreateServiceProvider();
+
+        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+
+        FakeTimer.Advance(TimeSpan.FromMinutes(1));
+
+        var content = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
+        content.ShouldBe(tvp.Value);
+    }
+
+    private sealed record TestValueProvider(string Value) { }
 
     private static class JobMethods
     {
