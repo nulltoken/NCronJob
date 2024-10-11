@@ -98,11 +98,16 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
     [Fact]
     public async Task InstantJobShouldGetParameter()
     {
-        ServiceCollection.AddNCronJob(n => n.AddJob<ParameterJob>());
+        ServiceCollection.AddNCronJob((n, sp) => n.AddJob<ParameterJob>());
         var provider = CreateServiceProvider();
         provider.GetRequiredService<IInstantJobRegistry>().RunInstantJob<ParameterJob>("Hello World");
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        var ss = provider.GetRequiredService<IEnumerable<IHostedService>>();
+
+        foreach (var s in ss)
+        {
+            await s.StartAsync(CancellationToken);
+        }
 
         var content = await CommunicationChannel.Reader.ReadAsync(CancellationToken);
         content.ShouldBe("Hello World");
@@ -239,7 +244,12 @@ public sealed class NCronJobIntegrationTests : JobIntegrationBase
             .And.WithCronExpression("* * * * *").WithName("Job 4")));
         var provider = CreateServiceProvider();
 
-        await provider.GetRequiredService<IHostedService>().StartAsync(CancellationToken);
+        var ss = provider.GetRequiredService<IEnumerable<IHostedService>>();
+
+        foreach (var s in ss)
+        {
+            await s.StartAsync(CancellationToken);
+        }
 
         FakeTimer.Advance(TimeSpan.FromMinutes(1));
         // Wait 2 instances at the same time

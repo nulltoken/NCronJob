@@ -74,19 +74,8 @@ public static class NCronJobExtensions
                             //             resolver.GetRequiredService<IOptions<MySettings>>().Value);
                             // }
 
-        if (options is not null)
-        {
-            services.TryAddSingleton((sp) =>
-            {
-                options(builder, sp);
-
-                return new MySettings();
-            });
-        }
-
-        builder.RegisterJobs(); // Complete building the NCronJobOptionBuilder
-
         services.TryAddSingleton(settings);
+        services.AddHostedService<ApplicationInsightsValidationService>();
         services.AddHostedService<QueueWorker>();
         services.TryAddSingleton<JobRegistry>();
         services.TryAddSingleton<DynamicJobFactoryRegistry>();
@@ -100,6 +89,18 @@ public static class NCronJobExtensions
         services.TryAddSingleton<IRuntimeJobRegistry, RuntimeJobRegistry>();
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<StartupJobManager>();
+
+        if (options is not null)
+        {
+            services.TryAddSingleton((sp) =>
+            {
+                options(builder, sp);
+                builder.RegisterJobs(); // Complete building the NCronJobOptionBuilder
+
+                return new MySettings();
+            });
+        }
+
 
         return services;
     }
